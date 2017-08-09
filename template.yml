@@ -1,0 +1,46 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Windows Buildkite Agent
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair
+    Type: "AWS::EC2::KeyPair::KeyName"
+
+  RootVolumeSize:
+    Description: Size of each instance's root EBS volume (in GB)
+    Type: Number
+    Default: 50
+    MinValue: 10
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs: { VolumeSize: { Ref: RootVolumeSize }, VolumeType: gp2 }
+      ImageId: "ami-bd5b7dab"
+      InstanceInitiatedShutdownBehavior: stop
+      InstanceType: "t2.medium"
+      KeyName: !Ref KeyName
+      Monitoring: 'true'
+      SecurityGroupIds:
+      - Fn::GetAtt:
+        - SecurityGroup
+        - GroupId
+      Tenancy: default
+
+  SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: Enable http access and rdp from anywhere
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '80'
+        IpProtocol: tcp
+        ToPort: '80'
+      - CidrIp: 0.0.0.0/0
+        FromPort: '3389'
+        IpProtocol: tcp
+        ToPort: '3389'
+
