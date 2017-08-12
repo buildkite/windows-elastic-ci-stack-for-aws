@@ -1,86 +1,40 @@
 {
-	"variables": {
-		"instance_type": "t2.xlarge",
-		"region": "us-east-1",
-		"subnet_id": "",
-		"docker_version": "17.06-0",
-		"docker_compose_version": "1.14.0",
-		"git_version": "2.13.3"
-	},
-	"builders": [
-		{
-			"type": "amazon-ebs",
-			"source_ami_filter": {
-				"filters": {
-					"virtualization-type": "hvm",
-					"name": "*Windows_Server-2016-English-Full-Containers-*",
-					"root-device-type": "ebs"
-				},
-				"owners": [
-					"801119661308"
-				],
-				"most_recent": true
-			},
-			"subnet_id": "{{user `subnet_id`}}",
-			"region": "{{user `region`}}",
-			"instance_type": "{{user `instance_type`}}",
-			"ami_name": "windows-docker-ci-{{user `branch` | clean_ami_name}}{{timestamp}}",
-			"user_data_file": "{{template_dir}}/scripts/builder-userdata.ps1",
-			"communicator": "ssh",
-			"ssh_username": "Administrator",
-			"ssh_timeout": "30m",
-			"disable_stop_instance": "true",
-			"associate_public_ip_address": "true",
-			"launch_block_device_mappings": [
-				{
-					"device_name": "/dev/sda1",
-					"volume_size": 50,
-					"volume_type": "gp2",
-					"delete_on_termination": true
-				}
-			]
-		}
-	],
-	"provisioners": [
-		{
-			"type": "shell",
-			"execute_command": "powershell {{ .Path }}",
-			"remote_path": "C:\\button-down.ps1",
-			"script": "{{template_dir}}/scripts/button-down.ps1",
-			"binary": "true",
-			"skip_clean": "true"
-		},
-		{
-			"type": "shell",
-			"execute_command": "powershell {{ .Path }} -gitVersion {{user `git_version`}}",
-			"remote_path": "C:\\git.ps1",
-			"script": "{{template_dir}}/scripts/git.ps1",
-			"binary": "true",
-			"skip_clean": "true"
-		},
-		{
-			"type": "shell",
-			"execute_command": "powershell -File {{ .Path }} -dockerVersion {{user `docker_version`}} -dockerComposeVersion {{user `docker_compose_version`}}",
-			"remote_path": "C:\\docker.ps1",
-			"script": "{{template_dir}}/scripts/docker.ps1",
-			"binary": "true",
-			"skip_clean": "true"
-		},
-		{
-			"type": "shell",
-			"execute_command": "exit",
-			"script": "{{template_dir}}/scripts/specialize-script.ps1",
-			"remote_path": "C:\\specialize-script.ps1",
-			"binary": "true",
-			"skip_clean": "true"
-		},
-		{
-			"type": "shell",
-			"execute_command": "powershell {{ .Path }}",
-			"remote_path": "C:\\provision.ps1",
-			"script": "{{template_dir}}/scripts/provision.ps1",
-			"binary": "true",
-			"skip_clean": "true"
-		}
-	]
+  "variables": {
+    "instance_type": "t2.xlarge",
+    "region": "us-east-1",
+    "subnet_id": ""
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "*Windows_Server-2016-English-Full-Containers-*",
+          "root-device-type": "ebs"
+        },
+        "owners": [
+          "801119661308"
+        ],
+        "most_recent": true
+      },
+      "subnet_id": "{{user `subnet_id`}}",
+      "region": "{{user `region`}}",
+      "instance_type": "{{user `instance_type`}}",
+      "ami_name": "windows-docker-ci-{{user `branch` | clean_ami_name}}{{timestamp}}",
+      "user_data_file": "{{template_dir}}/scripts/builder-userdata.ps1",
+      "communicator": "winrm",
+      "winrm_username": "Administrator",
+      "associate_public_ip_address": "true"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "powershell",
+      "inline": [
+        "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))",
+        "choco install -y 7zip git openssh docker"
+      ]
+    }
+  ]
 }

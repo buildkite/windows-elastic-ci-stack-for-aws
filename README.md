@@ -6,7 +6,3 @@ __This is a prototype and is completely non-functional. Abandon hope ye who ente
 An experiment in building an AMI and Cloudformation template for Buildkite+Windows.
 
 
-Credit
-======
-
-Based on https://github.com/friism/ec2-windows-packer-ssh

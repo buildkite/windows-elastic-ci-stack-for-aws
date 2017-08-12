@@ -1,56 +1,35 @@
 <powershell>
-$ProgressPreference = 'SilentlyContinue'
-$ErrorActionPreference = 'Stop'
 
-Write-Host "Disabling anti-virus monitoring"
-Set-MpPreference -DisableRealtimeMonitoring $true
+write-output "Running User Data Script"
+write-host "(host) Running User Data Script"
 
-Write-Host "Downloading OpenSSH"
-Invoke-WebRequest "https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.8.0/OpenSSH-Win64.zip" -OutFile OpenSSH-Win64.zip -UseBasicParsing
+Set-ExecutionPolicy Unrestricted -Scope LocalMachine -Force -ErrorAction Ignore
 
-Write-Host "Expanding OpenSSH"
-Expand-Archive OpenSSH-Win64.zip C:\
-Remove-Item -Force OpenSSH-Win64.zip
+# Don't set this before Set-ExecutionPolicy as it throws an error
+$ErrorActionPreference = "stop"
 
-Write-Host "Disabling password authentication"
-Add-Content C:\OpenSSH-Win64\sshd_config "`nPasswordAuthentication no"
-Add-Content C:\OpenSSH-Win64\sshd_config "`nUseDNS no"
+# Remove HTTP listener
+Remove-Item -Path WSMan:\Localhost\listener\listener* -Recurse
 
-Push-Location C:\OpenSSH-Win64
+# WinRM
+write-output "Setting up WinRM"
+write-host "(host) setting up WinRM"
 
-Write-Host "Installing OpenSSH"
-& .\install-sshd.ps1
+cmd.exe /c winrm quickconfig -q
+cmd.exe /c winrm quickconfig '-transport:http'
+cmd.exe /c winrm set "winrm/config" '@{MaxTimeoutms="1800000"}'
+cmd.exe /c winrm set "winrm/config/winrs" '@{MaxMemoryPerShellMB="1024"}'
+cmd.exe /c winrm set "winrm/config/service" '@{AllowUnencrypted="true"}'
+cmd.exe /c winrm set "winrm/config/client" '@{AllowUnencrypted="true"}'
+cmd.exe /c winrm set "winrm/config/service/auth" '@{Basic="true"}'
+cmd.exe /c winrm set "winrm/config/client/auth" '@{Basic="true"}'
+cmd.exe /c winrm set "winrm/config/service/auth" '@{CredSSP="true"}'
+cmd.exe /c winrm set "winrm/config/listener?Address=*+Transport=HTTP" '@{Port="5985"}'
+cmd.exe /c netsh advfirewall firewall set rule group="remote administration" new enable=yes
+cmd.exe /c netsh firewall add portopening TCP 5985 "Port 5985"
+cmd.exe /c net stop winrm
+cmd.exe /c sc config winrm start= auto
+cmd.exe /c net start winrm
+cmd.exe /c wmic useraccount where "name='vagrant'" set PasswordExpires=FALSE
 
-Write-Host "Installing OpenSSH key auth"
-& .\install-sshlsa.ps1
-
-Write-Host "Generating host keys"
-.\ssh-keygen.exe -A
-
-Pop-Location
-
-$newPath = 'C:\OpenSSH-Win64;' + [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::Machine)
-[Environment]::SetEnvironmentVariable("PATH", $newPath, [EnvironmentVariableTarget]::Machine)
-
-Write-Host "Adding public key from instance metadata to authorized_keys"
-$keyPath = "~\.ssh\authorized_keys"
-$keyUrl = "http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key"
-New-Item -Type Directory ~\.ssh > $null
-$ErrorActionPreference = 'SilentlyContinue'
-Do {
-	Start-Sleep 1
-	Invoke-WebRequest $keyUrl -UseBasicParsing -OutFile $keyPath
-} While ( -Not (Test-Path $keyPath) )
-$ErrorActionPreference = 'Stop'
-
-Write-Host "Opening firewall port 22"
-New-NetFirewallRule -Protocol TCP -LocalPort 22 -Direction Inbound -Action Allow -DisplayName SSH
-
-Write-Host "Setting sshd service startup type to 'Automatic'"
-Set-Service sshd -StartupType Automatic
-Set-Service ssh-agent -StartupType Automatic
-Write-Host "Setting sshd service restart behavior"
-sc.exe failure sshd reset= 86400 actions= restart/500
-
-Restart-Computer -Force
 </powershell>
