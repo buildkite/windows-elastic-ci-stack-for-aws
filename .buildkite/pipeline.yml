@@ -1,0 +1,10 @@
+env:
+  AWS_STACK_NAME: "buildkite-windows-aws-stack-test-${BUILDKITE_BUILD_NUMBER}"
+  AWS_STACK_QUEUE_NAME: "windows-testqueue-${BUILDKITE_BUILD_NUMBER}"
+
+steps:
+  - wait
+  - name: ":packer: Build"
+    command: .buildkite/steps/packer.sh
+    agents:
+      queue: "${BUILDKITE_AGENT_META_DATA_QUEUE}"
