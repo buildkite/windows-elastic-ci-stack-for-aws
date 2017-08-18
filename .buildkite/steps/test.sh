@@ -55,9 +55,7 @@ cat << EOF > config.json
 ]
 EOF
 
-version=$(git describe --tags --candidates=1)
-
-echo "--- Creating stack ${AWS_STACK_NAME} ($version)"
+echo "--- Creating stack ${AWS_STACK_NAME}"
 aws cloudformation create-stack \
   --output text \
   --stack-name "${AWS_STACK_NAME}" \
