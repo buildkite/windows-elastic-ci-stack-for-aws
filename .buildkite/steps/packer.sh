@@ -1,9 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-stack_bucket_path="${BUILDKITE_AWS_STACK_BUCKET}/packer"
-packer_file="${packer_hash}.packer"
-
 packer_hash=$(find packer/ -type f -print0 \
   | xargs -0 sha1sum \
   | awk '{print $1}' \
@@ -11,6 +8,9 @@ packer_hash=$(find packer/ -type f -print0 \
   | sha1sum \
   | awk '{print $1}'
 )
+
+stack_bucket_path="${BUILDKITE_AWS_STACK_BUCKET}/packer"
+packer_file="${packer_hash}.packer"
 
 echo "Packer files hash is $packer_hash"
 
