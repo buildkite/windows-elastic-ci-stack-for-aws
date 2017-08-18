@@ -8,3 +8,11 @@ steps:
     command: .buildkite/steps/packer.sh
     agents:
       queue: "${BUILDKITE_AGENT_META_DATA_QUEUE}"
+
+  - wait
+  - name: ":cloudformation: Test"
+    command: .buildkite/steps/test.sh
+    agents:
+      queue: "${BUILDKITE_AGENT_META_DATA_QUEUE}"
+
+
