@@ -30,7 +30,7 @@ cat << EOF > config.json
   },
   {
     "ParameterKey": "KeyName",
-    "ParameterValue": "${AWS_KEYPAIR:-default}"
+    "ParameterValue": "${AWS_KEYPAIR:-lox}"
   },
   {
     "ParameterKey": "ImageId",

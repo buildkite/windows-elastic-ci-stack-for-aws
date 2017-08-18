@@ -1,4 +1,5 @@
 env:
+  AWS_STACK_PREFIX: "buildkite-windows-aws-stack-test"
   AWS_STACK_NAME: "buildkite-windows-aws-stack-test-${BUILDKITE_BUILD_NUMBER}"
   AWS_STACK_QUEUE_NAME: "windows-testqueue-${BUILDKITE_BUILD_NUMBER}"
 
@@ -15,4 +16,8 @@ steps:
     agents:
       queue: "${BUILDKITE_AGENT_META_DATA_QUEUE}"
 
-
+  - wait
+  - name: ":cloudformation: Cleanup"
+    command: .buildkite/steps/cleanup.sh
+    agents:
+      queue: "${BUILDKITE_AGENT_META_DATA_QUEUE}"
